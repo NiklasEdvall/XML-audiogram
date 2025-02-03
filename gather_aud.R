@@ -47,5 +47,6 @@ for (file in xml_files) {
 }
 
 # Combine all data into a single data frame
-final_data <- bind_rows(all_data)
+dat <- bind_rows(all_data)
 
+save(dat, file = "data/dat.Rda")

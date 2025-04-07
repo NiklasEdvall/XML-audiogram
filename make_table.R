@@ -21,4 +21,4 @@ tab1 <- tableby(data = dat, Sex ~ Age + Hearing + Tinnitus + Noise,
 summary(tab1, text = TRUE)
 
 # Save table in word document
-write2word(tab1, "data/table1.docx")
+write2word(tab1, "table1.docx")

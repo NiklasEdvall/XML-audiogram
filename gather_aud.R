@@ -15,17 +15,20 @@ for (file in xml_files) {
   # Get namespace
   ns <- xml_ns(doc)
   
-  # Extract ClientInfo details
-  first_name <- xml_text(xml_find_first(doc, "//d1:SaData/d1:ClientInfo/d1:FirstName", ns))
+  # Extract FirstName from filename (before the first "_")
+  filename_base <- basename(file)
+  first_name <- sub("_.*", "", filename_base)
+  
+  # Extract creation date from XML
   create_date <- xml_text(xml_find_first(doc, "//d1:SaData/d1:Session/d1:Created", ns))
   
   # Extract TonePoint data
   tone_nodes <- xml_find_all(doc, "//d1:SaData/d1:Session/d1:Test/d1:Data/d1:RecordedData/d1:Measured/d1:Tone", ns)
   
   data_list <- lapply(tone_nodes, function(tone_node) {
-    ear_side <- xml_text(xml_find_first(tone_node, "d1:Earside", ns))  # Extract ear side from element
+    ear_side <- xml_text(xml_find_first(tone_node, "d1:Earside", ns))  # Extract ear side
     
-    tonepoints <- xml_find_all(tone_node, "d1:TonePoint", ns)  # Corrected case
+    tonepoints <- xml_find_all(tone_node, "d1:TonePoint", ns)
     
     data.frame(
       Frequency = as.numeric(xml_text(xml_find_all(tonepoints, "d1:Frequency", ns))),
@@ -33,8 +36,8 @@ for (file in xml_files) {
       StatusUT = xml_text(xml_find_all(tonepoints, "d1:StatusUT", ns)),
       Transducer = xml_text(xml_find_all(tonepoints, "d1:Transducer", ns)),
       EarSide = ear_side,
-      Filename = basename(file),  # Add filename
-      FirstName = first_name,
+      Filename = filename_base,
+      sub_id = first_name,
       CreateDate = create_date,
       stringsAsFactors = FALSE
     )

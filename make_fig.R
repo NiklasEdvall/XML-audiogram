@@ -4,12 +4,16 @@ library(ggpubr)
 library(tidyr)
 library(stringr)
 library(arsenal)
+library(readxl)
 
 #Load gathered audiogram data
 load("data/dat.Rda")
 
 #Remove 125 Hz
 dat <- dat[dat$Frequency != 125, ]
+
+#Remove not heard
+dat <- dat[dat$StatusUT != "NotHeard", ]
 
 # Pivot data wide for table
 data_wide <- dat %>%
@@ -137,3 +141,80 @@ labels(tab2)  <- c(c_250 = "250 Hz",
 summary(tab2, text = TRUE)
 
 write2word(tab2, "table2.docx")
+
+# Create a table comparing IntensityUT by EarSide, stratified by Frequency
+tab2thr <- tableby(EarSide ~ IntensityUT, data = dat, strata = Frequency)
+# Display the summary
+summary(tab2thr, text = TRUE, pfootnote = TRUE, total = FALSE)
+# Save to word
+write2word(tab2thr, "table2thr.docx")
+
+# Merge in FF-data
+ff <- read_excel("data/FFdata.xlsx", sheet = 1)
+
+ff$Sex <- factor(ff$Sex, levels = c(1,2), labels = c("M", "K"))
+ff$Hearing <- factor(ff$Hearing, levels = c(1,2,3,4), labels = c("Mycket bra", "Bra", "Dåligt", "Mycket dåligt"))
+ff$Tinnitus <- factor(ff$Tinnitus, levels = c(1,2,3), labels = c("Nej", "Ja, ibland", "Ja, alltid"))
+ff$Noise  <- factor(ff$Noise, levels = c(1,2,3), labels = c("Nej", "Ja, i viss grad", "Ja, i hög grad"))
+
+# Create new var that match ID from FF
+data_wide$ID <- substr(data_wide$sub_id, nchar(data_wide$sub_id) - 1, nchar(data_wide$sub_id))
+
+# Join ff to data_wide by ID
+data_wide <- left_join(data_wide, ff, by = "ID")
+
+# Create var for age group
+data_wide$age_group <- factor(ifelse(data_wide$Age <= 25, "≤25", "≥26"))
+
+# pivot to long format to use with tableby()
+
+data_long <- data_wide %>%
+  pivot_longer(
+    cols = starts_with(c("R_", "L_", "c_")),  # only pivot R_ and L_ columns
+    names_to = "Ear_Freq",
+    values_to = "Level"
+  ) %>%
+  separate(Ear_Freq, into = c("Ear", "Frequency"), sep = "_") %>%
+  mutate(
+    Ear = recode(Ear, R = "Right", L = "Left", c = "Mean L+R"),
+    Frequency = as.numeric(Frequency)
+  )
+
+
+# For ears
+age_tab <- tableby(
+  age_group ~ Level,
+  data = data_long %>% filter(Ear %in% c("Left", "Right")),
+  strata = Frequency,
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(age_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+
+sex_tab <- tableby(
+  Sex ~ Level,
+  data = data_long %>% filter(Ear %in% c("Left", "Right")),
+  strata = Frequency,
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(sex_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+
+# Combined ears
+age_tab <- tableby(
+  age_group ~ Level,
+  data = data_long %>% filter(Ear %in% c("Mean L+R")),
+  strata = Frequency,
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(age_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+
+sex_tab <- tableby(
+  Sex ~ Level,
+  data = data_long %>% filter(Ear %in% c("Mean L+R")),
+  strata = Frequency,
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(sex_tab, text = TRUE, pfootnote = TRUE, total = FALSE)

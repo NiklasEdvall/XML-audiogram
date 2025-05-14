@@ -152,6 +152,7 @@ write2word(tab2thr, "table2thr.docx")
 # Merge in FF-data
 ff <- read_excel("data/FFdata.xlsx", sheet = 1)
 
+# Specify factor variables
 ff$Sex <- factor(ff$Sex, levels = c(1,2), labels = c("M", "K"))
 ff$Hearing <- factor(ff$Hearing, levels = c(1,2,3,4), labels = c("Mycket bra", "Bra", "Dåligt", "Mycket dåligt"))
 ff$Tinnitus <- factor(ff$Tinnitus, levels = c(1,2,3), labels = c("Nej", "Ja, ibland", "Ja, alltid"))
@@ -190,6 +191,7 @@ age_tab <- tableby(
 )
 
 summary(age_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(age_tab, "age_tab_ears.docx")
 
 sex_tab <- tableby(
   Sex ~ Level,
@@ -199,6 +201,7 @@ sex_tab <- tableby(
 )
 
 summary(sex_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(sex_tab, "sex_tab_ears.docx")
 
 # Combined ears
 age_tab <- tableby(
@@ -209,6 +212,7 @@ age_tab <- tableby(
 )
 
 summary(age_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(age_tab, "age_tab.docx")
 
 sex_tab <- tableby(
   Sex ~ Level,
@@ -218,3 +222,60 @@ sex_tab <- tableby(
 )
 
 summary(sex_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(sex_tab, "sex_tab.docx", total = FALSE, pfootnote = TRUE)
+
+# DF for standard and high frequency
+
+# Add frequency band classification
+data_freq_summary <- data_long %>%
+  mutate(
+    freq_band = case_when(
+      Frequency >= 125 & Frequency <= 8000 ~ "standard_freq",
+      Frequency >= 9000 & Frequency <= 16000 ~ "high_freq",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(freq_band)) %>%
+  group_by(sub_id, Ear, freq_band, Tinnitus, Noise, Hearing) %>%
+  summarise(mean_Level = mean(Level, na.rm = TRUE), .groups = "drop")
+
+# Make table
+
+#Tinnitus
+tin_tab <- tableby(
+  freq_band ~ mean_Level,
+  data = data_freq_summary %>% filter(Ear %in% c("Mean L+R")),
+  strata = Tinnitus,
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(tin_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+
+#Noise
+noise_tab <- tableby(
+  freq_band ~ mean_Level,
+  data = data_freq_summary %>% filter(Ear %in% c("Mean L+R")),
+  strata = Noise,
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(noise_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+
+#Noise
+hearing_tab <- tableby(
+  freq_band ~ mean_Level,
+  data = data_freq_summary %>% filter(Ear %in% c("Mean L+R")),
+  strata = Hearing,
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(hearing_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+
+# high vs std freqs for ears
+high_std_tab <- tableby(
+  freq_band ~ mean_Level,
+  data = data_freq_summary %>% filter(Ear %in% c("Left", "Right")),
+  control = tableby.control(numeric.stats = c("N", "mean", "sd", "median", "range"))
+)
+
+summary(high_std_tab, text = TRUE, pfootnote = TRUE, total = FALSE)

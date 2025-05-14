@@ -250,6 +250,7 @@ tin_tab <- tableby(
 )
 
 summary(tin_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(tin_tab, "tin_tab.docx", total = FALSE, pfootnote = TRUE)
 
 #Noise
 noise_tab <- tableby(
@@ -260,8 +261,9 @@ noise_tab <- tableby(
 )
 
 summary(noise_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(noise_tab, "noise_tab.docx", total = FALSE, pfootnote = TRUE)
 
-#Noise
+#Hearing
 hearing_tab <- tableby(
   freq_band ~ mean_Level,
   data = data_freq_summary %>% filter(Ear %in% c("Mean L+R")),
@@ -270,6 +272,7 @@ hearing_tab <- tableby(
 )
 
 summary(hearing_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(hearing_tab, "hearing_tab.docx", total = FALSE, pfootnote = TRUE)
 
 # high vs std freqs for ears
 high_std_tab <- tableby(
@@ -279,3 +282,4 @@ high_std_tab <- tableby(
 )
 
 summary(high_std_tab, text = TRUE, pfootnote = TRUE, total = FALSE)
+write2word(high_std_tab, "high_std_tab.docx", total = FALSE, pfootnote = TRUE)
